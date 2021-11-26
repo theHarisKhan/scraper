@@ -1,19 +1,14 @@
 const rp = require("request-promise");
 const cheerio = require("cheerio");
-const { parse } = require("json2csv");
+const xl = require("excel4node");
 const fs = require("fs");
-const urls = [
-  "https://www.amazon.in/s?k=keyboard&tag=amdot-21&ref=nb_sb_noss",
-  "https://www.amazon.in/s?k=keyboard&page=2&qid=1637742743&ref=sr_pg_2",
-  "https://www.amazon.in/s?k=keyboard&page=3&qid=1637772867&ref=sr_pg_3",
-  "https://www.amazon.in/s?k=keyboard&page=4&qid=1637775042&ref=sr_pg_4",
-  "https://www.amazon.in/s?k=keyboard&page=5&qid=1637775046&ref=sr_pg_5",
-  "https://www.amazon.in/s?k=keyboard&page=6&qid=1637775062&ref=sr_pg_6",
-  "https://www.amazon.in/s?k=keyboard&page=7&qid=1637775082&ref=sr_pg_7",
-];
+// links to scrap
+const urls = require("./links");
 
-const AMZData = [];
-const fields = [
+// WorkSheet Headings and Name
+const wb = new xl.Workbook();
+const ws = wb.addWorksheet("Data");
+const headingColumnNames = [
   "Name",
   "Link",
   "WholeSalePrice",
@@ -21,7 +16,7 @@ const fields = [
   "Rating",
   "Offer",
 ];
-const opts = { fields };
+const AMZData = [];
 
 async function app() {
   for await (url of urls) {
@@ -51,9 +46,20 @@ async function YoManScrapIt(url) {
       );
       //   console.log(AMZData);
       try {
-        const csv = parse(AMZData, opts);
-        // console.log(csv);
-        fs.writeFileSync("test.txt", csv, { flag: "a+" });
+        let headingColumnIndex = 1;
+        headingColumnNames.forEach((heading) => {
+          ws.cell(1, headingColumnIndex++).string(heading);
+        });
+        //Write Data in Excel file
+        let rowIndex = 2;
+        AMZData.forEach((record) => {
+          let columnIndex = 1;
+          Object.keys(record).forEach((columnName) => {
+            ws.cell(rowIndex, columnIndex++).string(record[columnName]);
+          });
+          rowIndex++;
+        });
+        wb.write("Data.xlsx");
       } catch (err) {
         console.error(err);
       }
